@@ -1,12 +1,14 @@
 // ==UserScript==
 // @name         ORBIT
 // @namespace    http://tampermonkey.net/
-// @version      1.035
+// @version      1.037
 // @description  Old Reddit Ban Insertion Tool -- Autofill ban fields on the Old Reddit ban page based on made-up URL parameters.
 // @author       portable-hole
-// @match        https://old.reddit.com/r/*/about/banned/*
+// @match        https://*.reddit.com/r/*/about/banned/*
 // @downloadURL  https://github.com/quentinwolf/ORBIT/raw/main/ORBIT.user.js
 // @updateURL    https://github.com/quentinwolf/ORBIT/raw/main/ORBIT.user.js
+// @OLDdownloadURL  https://github.com/portable-hole/ORBIT/raw/main/ORBIT.user.js
+// @OLDupdateURL    https://github.com/portable-hole/ORBIT/raw/main/ORBIT.user.js
 // @grant        none
 // ==/UserScript==
 
@@ -19,16 +21,14 @@
         "dadsgonewild": {
             "requiredAge": 30,
             "reasons": {
-                1: "You have been banned for violating **Rule 2**. All content must depict men **aged 50+ only**. Do not post content outside this scope. You are ",  // age related
-                2: "You have been banned for using inappropriate language.",
-                3: "You have been banned for not following subreddit guidelines."
+                1: "You have been banned for violating **Rule 2**. All content must depict men **aged 30+ only**. Do not post content outside this scope. You are "
                 // Add other reasons as needed
             }
         },
         "daddypics": {
             "requiredAge": 40,
             "reasons": {
-                1: "You have been banned for violating **Rule 2**. All content must depict men **aged 50+ only**. Do not post content outside this scope. You are ",  // age related
+                1: "You have been banned for violating **Rule 2**. All content must depict men **aged 40+ only**. Do not post content outside this scope. You are ",  // age related
                 2: "You have been banned for using inappropriate language.",
                 3: "You have been banned for not following subreddit guidelines."
                 // Add other reasons as needed
@@ -37,7 +37,7 @@
         "olddicks": {
             "requiredAge": 40,
             "reasons": {
-                1: "You have been banned for violating **Rule 2**. All content must depict men **aged 50+ only**. Do not post content outside this scope. You are ",  // age related
+                1: "You have been banned for violating **Rule 2**. All content must depict men **aged 40+ only**. Do not post content outside this scope. You are ",  // age related
                 2: "You have been banned for using inappropriate language.",
                 3: "You have been banned for not following subreddit guidelines."
                 // Add other reasons as needed
@@ -95,7 +95,7 @@
         console.log("Real Age:", realAge);
         console.log("Age Fake:", ageFake);
 
-        let subredditMatch = window.location.href.match(/https:\/\/old\.reddit\.com\/r\/(.*?)\//);
+        let subredditMatch = window.location.href.match(/https:\/\/(?:www|old)\.reddit\.com\/r\/(.*?)\//);
         let subreddit = (subredditMatch && subredditMatch[1]) ? subredditMatch[1].toLowerCase() : null;
 
         let config = subredditBanConfig[subreddit];
