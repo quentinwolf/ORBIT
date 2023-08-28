@@ -5,8 +5,8 @@
 // @description  Old Reddit Ban Insertion Tool -- Autofill ban fields on the Old Reddit ban page based on made-up URL parameters.
 // @author       portable-hole
 // @match        https://old.reddit.com/r/*/about/banned/*
-// @downloadURL  https://github.com/portable-hole/ORBIT/raw/main/ORBIT.user.js
-// @updateURL    https://github.com/portable-hole/ORBIT/raw/main/ORBIT.user.js
+// @downloadURL  https://github.com/quentinwolf/ORBIT/raw/main/ORBIT.user.js
+// @updateURL    https://github.com/quentinwolf/ORBIT/raw/main/ORBIT.user.js
 // @grant        none
 // ==/UserScript==
 
