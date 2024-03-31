@@ -1,12 +1,15 @@
 // ==UserScript==
 // @name         ORBIT
 // @namespace    http://tampermonkey.net/
-// @version      1.038
+// @version      1.039
 // @description  Old Reddit Ban Insertion Tool -- Autofill ban fields on the Old Reddit ban page based on made-up URL parameters.
 // @author       portable-hole
 // @match        https://*.reddit.com/r/*/about/banned/*
-// @downloadURL  https://github.com/portable-hole/ORBIT/raw/main/ORBIT.user.js
-// @updateURL    https://github.com/portable-hole/ORBIT/raw/main/ORBIT.user.js
+// @match        https://*.reddit.com/r/*/about/contributors/*
+// @downloadURL  https://github.com/quentinwolf/ORBIT/raw/main/ORBIT.user.js
+// @updateURL    https://github.com/quentinwolf/ORBIT/raw/main/ORBIT.user.js
+// @OLDdownloadURL  https://github.com/portable-hole/ORBIT/raw/main/ORBIT.user.js
+// @OLDupdateURL    https://github.com/portable-hole/ORBIT/raw/main/ORBIT.user.js
 // @grant        none
 // ==/UserScript==
 
@@ -143,6 +146,27 @@
         }
     }
 
-    // Run the script
-    fillBanFields();
+    function fillContributorFields() {
+        console.log("Running the script for contributors...");
+
+        let username = getParameterByName('user');
+        console.log("Username:", username);
+
+        if (!username) {
+            console.log("Username parameter not passed.");
+            return; // Parameter not passed
+        }
+
+        // Fill the username field
+        document.querySelector('#name').value = username;
+
+        console.log("Filled the username field.");
+    }
+
+    // Run the appropriate script based on the current page
+    if (window.location.pathname.includes('/about/banned/')) {
+        fillBanFields();
+    } else if (window.location.pathname.includes('/about/contributors/')) {
+        fillContributorFields();
+    }
 })();
