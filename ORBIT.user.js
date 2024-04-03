@@ -1,10 +1,11 @@
 // ==UserScript==
 // @name         ORBIT
 // @namespace    http://tampermonkey.net/
-// @version      1.037
+// @version      1.039
 // @description  Old Reddit Ban Insertion Tool -- Autofill ban fields on the Old Reddit ban page based on made-up URL parameters.
 // @author       portable-hole
 // @match        https://*.reddit.com/r/*/about/banned/*
+// @match        https://*.reddit.com/r/*/about/contributors/*
 // @downloadURL  https://github.com/quentinwolf/ORBIT/raw/main/ORBIT.user.js
 // @updateURL    https://github.com/quentinwolf/ORBIT/raw/main/ORBIT.user.js
 // @OLDdownloadURL  https://github.com/portable-hole/ORBIT/raw/main/ORBIT.user.js
@@ -68,6 +69,12 @@
         return decodeURIComponent(results[2].replace(/\+/g, ' '));
     }
 
+    function parseAge(ageString) {
+        // Use regex to extract numeric value
+        let match = ageString.match(/(\d+)/);
+        return match ? parseInt(match[1], 10) : null; // Return null if no number found
+    }
+
     // Fill ban form fields
     function fillBanFields() {
         console.log("Running the script...");
@@ -82,18 +89,19 @@
 
         let reasonCode = parseInt(getParameterByName('reason'), 10);
 
-        let realAgeString = getParameterByName('agetrue');
-        let ageFakeString = getParameterByName('agefake');
-        let realAge = parseInt(realAgeString, 10);
-        let ageFake = parseInt(ageFakeString, 10);
+        let realAgeString = getParameterByName('realage');
+        let fakeAgeString = getParameterByName('fakeage');
+        //let realAge = parseInt(realAgeString, 10);
+        let realAge = parseAge(realAgeString); //Run the real age through regex to extract the actual age
+        let fakeAge = parseInt(fakeAgeString, 10);
 
-        if (isNaN(realAge) || isNaN(ageFake)) {
+        if (isNaN(realAge) || isNaN(fakeAge)) {
             console.log("Invalid or missing age parameters.");
             return; // Invalid or missing age parameters
         }
 
         console.log("Real Age:", realAge);
-        console.log("Age Fake:", ageFake);
+        console.log("Age Fake:", fakeAge);
 
         let subredditMatch = window.location.href.match(/https:\/\/(?:www|old)\.reddit\.com\/r\/(.*?)\//);
         let subreddit = (subredditMatch && subredditMatch[1]) ? subredditMatch[1].toLowerCase() : null;
@@ -125,7 +133,7 @@
 
         // Fill fields
         document.querySelector('.friend-name').value = username;
-        document.querySelector('#note').value = realAge + " as " + ageFake + " to evade bot";
+        document.querySelector('#note').value = realAge + " as " + fakeAge + " to evade bot";
         document.querySelector('#duration').value = banDuration;
         document.querySelector('#ban_message').value = banMessage;
 
@@ -138,6 +146,27 @@
         }
     }
 
-    // Run the script
-    fillBanFields();
+    function fillContributorFields() {
+        console.log("Running the script for contributors...");
+
+        let username = getParameterByName('user');
+        console.log("Username:", username);
+
+        if (!username) {
+            console.log("Username parameter not passed.");
+            return; // Parameter not passed
+        }
+
+        // Fill the username field
+        document.querySelector('#name').value = username;
+
+        console.log("Filled the username field.");
+    }
+
+    // Run the appropriate script based on the current page
+    if (window.location.pathname.includes('/about/banned/')) {
+        fillBanFields();
+    } else if (window.location.pathname.includes('/about/contributors/')) {
+        fillContributorFields();
+    }
 })();
