@@ -1,11 +1,13 @@
 // ==UserScript==
 // @name         ORBIT
 // @namespace    http://tampermonkey.net/
-// @version      1.039
+// @version      1.040
 // @description  Old Reddit Ban Insertion Tool -- Autofill ban fields on the Old Reddit ban page based on made-up URL parameters.
 // @author       portable-hole
 // @match        https://*.reddit.com/r/*/about/banned/*
 // @match        https://*.reddit.com/r/*/about/contributors/*
+// @match        https://*.reddit.com/r/mod/about/modqueue*
+// @match        https://www.reddit.com/report*
 // @downloadURL  https://github.com/quentinwolf/ORBIT/raw/main/ORBIT.user.js
 // @updateURL    https://github.com/quentinwolf/ORBIT/raw/main/ORBIT.user.js
 // @OLDdownloadURL  https://github.com/portable-hole/ORBIT/raw/main/ORBIT.user.js
@@ -73,6 +75,58 @@
         // Use regex to extract numeric value
         let match = ageString.match(/(\d+)/);
         return match ? parseInt(match[1], 10) : null; // Return null if no number found
+    }
+
+    // New function to add ban evasion report links to mod queue
+    function addBanEvasionReportLinks() {
+        const things = document.querySelectorAll('.thing');
+
+        things.forEach(thing => {
+            const reportButton = thing.querySelector('.report-button');
+            if (reportButton) {
+                const username = thing.getAttribute('data-author');
+                const subreddit = thing.getAttribute('data-subreddit');
+                const permalink = thing.getAttribute('data-permalink');
+
+                const reportLink = document.createElement('a');
+                reportLink.href = `https://www.reddit.com/report?reason=its-ban-evasion&subreddit=${subreddit}&username=${username}&info=${encodeURIComponent(permalink)}`;
+                reportLink.textContent = 'Report Ban Evasion';
+                reportLink.className = 'report-ban-evasion';
+                reportLink.style.marginLeft = '4px';
+                reportLink.style.marginRight = '6px';
+                reportLink.style.color = '#ff4500';
+
+                reportButton.parentNode.insertBefore(reportLink, reportButton.nextSibling);
+            }
+        });
+    }
+
+    // New function to fill ban evasion report form
+    function fillBanEvasionReport() {
+        const subreddit = getParameterByName('subreddit');
+        const username = getParameterByName('username');
+        const info = getParameterByName('info');
+
+        // Wait for form elements to be available
+        const checkForm = setInterval(() => {
+            const subredditInput = document.querySelector('input[data-empty="true"]');
+            const usernameInput = document.querySelector('input[value^="u/"]');
+            const infoTextarea = document.querySelector('textarea[data-empty="true"]');
+
+            if (subredditInput && usernameInput && infoTextarea) {
+                clearInterval(checkForm);
+
+                subredditInput.value = subreddit;
+                subredditInput.dispatchEvent(new Event('input', { bubbles: true }));
+
+                usernameInput.value = `u/${username}`;
+                usernameInput.dispatchEvent(new Event('input', { bubbles: true }));
+
+                const infoText = `Ban Evasion: This content is from an account suspected of ban evasion\nPermalink: ${info}`;
+                infoTextarea.value = infoText;
+                infoTextarea.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+        }, 500);
     }
 
     // Fill ban form fields
@@ -164,9 +218,14 @@
     }
 
     // Run the appropriate script based on the current page
-    if (window.location.pathname.includes('/about/banned/')) {
+    const path = window.location.pathname;
+    if (path.includes('/about/banned/')) {
         fillBanFields();
-    } else if (window.location.pathname.includes('/about/contributors/')) {
+    } else if (path.includes('/about/contributors/')) {
         fillContributorFields();
+    } else if (path.includes('/r/mod/about/modqueue')) {
+        addBanEvasionReportLinks();
+    } else if (path === '/report' && getParameterByName('reason') === 'its-ban-evasion') {
+        fillBanEvasionReport();
     }
 })();
