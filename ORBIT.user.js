@@ -1,13 +1,13 @@
 // ==UserScript==
 // @name         ORBIT
 // @namespace    http://tampermonkey.net/
-// @version      1.042
+// @version      1.044
 // @description  Old Reddit Ban Insertion Tool -- Autofill ban fields on the Old Reddit ban page based on made-up URL parameters.
 // @author       portable-hole
 // @match        https://*.reddit.com/r/*/about/banned/*
 // @match        https://*.reddit.com/r/*/about/contributors/*
 // @match        https://*.reddit.com/r/mod/about/modqueue*
-// @match        https://www.reddit.com/report*
+// @match        https://new.reddit.com/report*
 // @downloadURL  https://github.com/quentinwolf/ORBIT/raw/main/ORBIT.user.js
 // @updateURL    https://github.com/quentinwolf/ORBIT/raw/main/ORBIT.user.js
 // @OLDdownloadURL  https://github.com/portable-hole/ORBIT/raw/main/ORBIT.user.js
@@ -89,7 +89,7 @@
                 const permalink = thing.getAttribute('data-permalink');
 
                 const reportLink = document.createElement('a');
-                reportLink.href = `https://www.reddit.com/report?reason=its-ban-evasion&subreddit=${subreddit}&username=${username}&info=${encodeURIComponent(permalink)}`;
+                reportLink.href = `https://new.reddit.com/report?reason=its-ban-evasion&subreddit=${subreddit}&username=${username}&info=${encodeURIComponent(permalink)}`;
                 reportLink.textContent = 'Report Ban Evasion';
                 reportLink.className = 'report-ban-evasion';
                 reportLink.style.marginLeft = '4px';
