@@ -1,17 +1,18 @@
 // ==UserScript==
 // @name         ORBIT
 // @namespace    http://tampermonkey.net/
-// @version      1.044
+// @version      1.045
 // @description  Old Reddit Ban Insertion Tool -- Autofill ban fields on the Old Reddit ban page based on made-up URL parameters.
 // @author       portable-hole
 // @match        https://*.reddit.com/r/*/about/banned/*
 // @match        https://*.reddit.com/r/*/about/contributors/*
 // @match        https://*.reddit.com/r/mod/about/modqueue*
-// @match        https://new.reddit.com/report*
+// @match        https://*.reddit.com/report*
 // @downloadURL  https://github.com/quentinwolf/ORBIT/raw/main/ORBIT.user.js
 // @updateURL    https://github.com/quentinwolf/ORBIT/raw/main/ORBIT.user.js
 // @OLDdownloadURL  https://github.com/portable-hole/ORBIT/raw/main/ORBIT.user.js
 // @OLDupdateURL    https://github.com/portable-hole/ORBIT/raw/main/ORBIT.user.js
+// @run-at       document-end
 // @grant        none
 // ==/UserScript==
 
@@ -101,8 +102,91 @@
         });
     }
 
-    // New function to fill ban evasion report form
-    function fillBanEvasionReport() {
+    // Old Reddit function to fill ban evasion report form
+function fillBanEvasionReportOld() {
+    console.log("BANEVADER script started.");
+
+    const subreddit = getParameterByName('subreddit');
+    const username = getParameterByName('username');
+    const info = getParameterByName('info');
+
+    function findBanEvasionReasonWrapper() {
+        const reasonWrappers = document.querySelectorAll('.reason-wrapper');
+        for (let wrapper of reasonWrappers) {
+            const banEvasionInput = wrapper.querySelector('input[data-reason-as-param="its-ban-evasion"]');
+            if (banEvasionInput) return wrapper;
+        }
+        return null;
+    }
+
+    function findBanEvasionUsernameInput() {
+        const wrapper = findBanEvasionReasonWrapper();
+        if (wrapper) return wrapper.querySelector('.username-field-row input[type="text"]');
+        return null;
+    }
+
+    function findBanEvasionTextarea() {
+        const wrapper = findBanEvasionReasonWrapper();
+        if (wrapper) return wrapper.querySelector('.custom-text-input-div textarea');
+        return null;
+    }
+
+    function setNativeValue(element, value) {
+        console.log(`Setting native value for element:`, element);
+        const lastValue = element.value;
+        element.value = value;
+
+        const event = new Event('input', { bubbles: true });
+        const tracker = element._valueTracker;
+        if (tracker) tracker.setValue(lastValue);
+
+        element.dispatchEvent(event);
+    }
+
+    function verifyFieldValue(element, expectedValue, fieldName) {
+        setTimeout(() => {
+            const actualValue = element.value;
+            console.log(`${fieldName} - Expected: "${expectedValue}" vs Actual: "${actualValue}"`);
+        }, 500);
+    }
+
+    function fillFields() {
+        const subredditInput = document.querySelector('.sr-name-text-input-div input[type="text"]');
+        if (subredditInput && subreddit) {
+            setNativeValue(subredditInput, subreddit);
+            verifyFieldValue(subredditInput, subreddit, 'Subreddit Input');
+        }
+
+        const usernameInput = findBanEvasionUsernameInput();
+        if (usernameInput && username) {
+            setNativeValue(usernameInput, `u/${username}`);
+            verifyFieldValue(usernameInput, `u/${username}`, 'Username Input');
+        }
+
+        const infoTextarea = findBanEvasionTextarea();
+        if (infoTextarea && info) {
+            const infoValue = `Ban Evasion: This content is from an account suspected of ban evasion\nPermalink: ${info}`;
+            setNativeValue(infoTextarea, infoValue);
+            verifyFieldValue(infoTextarea, infoValue, 'Info Textarea');
+        }
+    }
+
+    const observer = new MutationObserver((mutations, observer) => {
+        const subredditInput = document.querySelector('.sr-name-text-input-div input[type="text"]');
+        const usernameInput = findBanEvasionUsernameInput();
+        const infoTextarea = findBanEvasionTextarea();
+
+        if (subredditInput && usernameInput && infoTextarea) {
+            fillFields();
+            observer.disconnect();
+        }
+    });
+
+    observer.observe(document.body, { childList: true, subtree: true });
+}
+
+    // New Reddit function to fill ban evasion report form
+    function fillBanEvasionReportNew() {
         const subreddit = getParameterByName('subreddit');
         const username = getParameterByName('username');
         const info = getParameterByName('info');
@@ -255,13 +339,17 @@
 
     // Run the appropriate script based on the current page
     const path = window.location.pathname;
+    const hostname = window.location.hostname;
+
     if (path.includes('/about/banned/')) {
         fillBanFields();
     } else if (path.includes('/about/contributors/')) {
         fillContributorFields();
     } else if (path.includes('/r/mod/about/modqueue')) {
         addBanEvasionReportLinks();
-    } else if (path === '/report' && getParameterByName('reason') === 'its-ban-evasion') {
-        fillBanEvasionReport();
+    } else if (hostname === 'old.reddit.com' && (path.includes('/report') && getParameterByName('reason') === 'its-ban-evasion')) {
+        fillBanEvasionReportOld();
+    } else if ((hostname === 'www.reddit.com' || hostname === 'new.reddit.com') && path.includes('/report') && getParameterByName('reason') === 'its-ban-evasion') {
+        fillBanEvasionReportNew();
     }
 })();
