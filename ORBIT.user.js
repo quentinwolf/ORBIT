@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         ORBIT
 // @namespace    http://tampermonkey.net/
-// @version      1.049
+// @version      1.051
 // @description  Old Reddit Ban Insertion Tool -- Autofill ban fields on the Old Reddit ban page based on made-up URL parameters.
 // @author       portable-hole
 // @match        https://*.reddit.com/r/*/about/banned/*
@@ -80,36 +80,100 @@
 
     // New function to add ban evasion report links to mod queue
     function addBanEvasionReportLinks() {
-        const things = document.querySelectorAll('.thing');
+        const thingsContainer = document.querySelector('#siteTable'); // Parent container of modqueue items
 
-        things.forEach(thing => {
+        if (!thingsContainer) {
+            console.log('No modqueue items found.');
+            return;
+        }
+
+        console.log('Ban Evasion report link observer initialized.');
+
+        // Function to process individual items and inject the Ban Evasion report link
+        function processThing(thing) {
+            console.log('Processing thing:', thing);
+
             const reportButton = thing.querySelector('.report-button');
-            const reportReasons = thing.querySelectorAll('.report-reasons .report-reason-item');
+            const actionTable = thing.querySelector('.tb-action-table');
 
-            // Check if any of the report reasons contain "ban evasion"
-            const hasBanEvasionReport = Array.from(reportReasons).some(reason =>
-                                                                       reason.textContent.toLowerCase().includes('ban evasion')
-                                                                      );
-
-            if (reportButton && hasBanEvasionReport) {
-                const username = thing.getAttribute('data-author');
-                const subreddit = thing.getAttribute('data-subreddit');
-                const permalink = thing.getAttribute('data-permalink');
-
-                const reportLink = document.createElement('a');
-                reportLink.href = `https://old.reddit.com/report?reason=its-ban-evasion&subreddit=${subreddit}&username=${username}&info=${encodeURIComponent(permalink)}`;
-                reportLink.target = `_blank`;
-                reportLink.textContent = '🚨Ban Evasion';
-                reportLink.className = 'report-ban-evasion';
-                reportLink.style.marginLeft = '2px';
-                reportLink.style.marginRight = '7px';
-                reportLink.style.color = '#ff4500';
-                reportLink.style.fontWeight = 'bold';
-
-                reportButton.parentNode.insertBefore(reportLink, reportButton.nextSibling);
+            if (!reportButton) {
+                console.log('No report button found for this item.');
+                return;
             }
+
+            if (!actionTable) {
+                console.log('No action table found for this item. Retrying in 500ms...');
+                // Retry in 500ms
+                setTimeout(() => processThing(thing), 500);
+                return;
+            }
+
+            // Check if the action table contains a Ban Evasion reason
+            const hasBanEvasionAction = Array.from(actionTable.querySelectorAll('td')).some(td =>
+                                                                                            td.textContent.toLowerCase().includes('ban evasion')
+                                                                                           );
+
+            if (hasBanEvasionAction) {
+                console.log('Ban Evasion detected for:', thing);
+
+                if (!thing.querySelector('.report-ban-evasion')) {
+                    const username = thing.getAttribute('data-author');
+                    const subreddit = thing.getAttribute('data-subreddit');
+                    const permalink = thing.getAttribute('data-permalink');
+
+                    const reportLink = document.createElement('a');
+                    reportLink.href = `https://old.reddit.com/report?reason=its-ban-evasion&subreddit=${subreddit}&username=${username}&info=${encodeURIComponent(permalink)}`;
+                    reportLink.target = `_blank`;
+                    reportLink.textContent = '🚨Ban Evasion';
+                    reportLink.className = 'report-ban-evasion';
+                    reportLink.style.marginLeft = '2px';
+                    reportLink.style.marginRight = '7px';
+                    reportLink.style.color = '#ff4500';
+                    reportLink.style.fontWeight = 'bold';
+
+                    reportButton.parentNode.insertBefore(reportLink, reportButton.nextSibling);
+                    console.log('Ban Evasion report link added.');
+                } else {
+                    console.log('Ban Evasion link already exists for this item.');
+                }
+            } else {
+                console.log('No Ban Evasion detected for:', thing);
+            }
+        }
+
+        // Process existing items
+        const existingThings = document.querySelectorAll('.thing');
+        console.log('Found existing things:', existingThings.length);
+        existingThings.forEach(processThing);
+
+        // Set up a MutationObserver to watch for changes in the modqueue
+        const observer = new MutationObserver(mutations => {
+            console.log('Mutation observed:', mutations.length);
+            mutations.forEach(mutation => {
+                if (mutation.addedNodes && mutation.addedNodes.length > 0) {
+                    console.log('Added nodes detected:', mutation.addedNodes.length);
+                    mutation.addedNodes.forEach(node => {
+                        if (node.classList && node.classList.contains('thing')) {
+                            console.log('Processing new thing:', node);
+                            processThing(node); // Process newly added items
+                        } else if (node.querySelectorAll) {
+                            // Check for updates to existing items (e.g., loading of tb-action-table)
+                            const updatedThings = node.querySelectorAll('.thing');
+                            console.log('Processing updated things:', updatedThings.length);
+                            updatedThings.forEach(processThing);
+                        }
+                    });
+                }
+            });
         });
+
+        // Observe changes to the #siteTable and its subtree
+        observer.observe(thingsContainer, { childList: true, subtree: true });
     }
+
+
+
+
 
     // Old Reddit function to fill ban evasion report form
     function fillBanEvasionReportOld() {
