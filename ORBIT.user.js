@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         ORBIT
 // @namespace    http://tampermonkey.net/
-// @version      1.040
+// @version      1.042
 // @description  Old Reddit Ban Insertion Tool -- Autofill ban fields on the Old Reddit ban page based on made-up URL parameters.
 // @author       portable-hole
 // @match        https://*.reddit.com/r/*/about/banned/*
@@ -107,26 +107,62 @@
         const username = getParameterByName('username');
         const info = getParameterByName('info');
 
-        // Wait for form elements to be available
-        const checkForm = setInterval(() => {
-            const subredditInput = document.querySelector('input[data-empty="true"]');
-            const usernameInput = document.querySelector('input[value^="u/"]');
-            const infoTextarea = document.querySelector('textarea[data-empty="true"]');
+        // Wait longer for React to fully initialize
+        setTimeout(() => {
+            const checkForm = setInterval(() => {
+                const subredditInput = document.querySelector('input[data-empty="true"]');
+                const usernameInput = document.querySelector('input[value^="u/"]');
+                const infoTextarea = document.querySelector('textarea[data-empty="true"]');
 
-            if (subredditInput && usernameInput && infoTextarea) {
-                clearInterval(checkForm);
+                if (subredditInput && usernameInput && infoTextarea) {
+                    clearInterval(checkForm);
 
-                subredditInput.value = subreddit;
-                subredditInput.dispatchEvent(new Event('input', { bubbles: true }));
+                    // Create a controlled input simulation function
+                    const simulateControlledInput = (element, finalValue) => {
+                        // Get the original descriptor
+                        const descriptor = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value');
 
-                usernameInput.value = `u/${username}`;
-                usernameInput.dispatchEvent(new Event('input', { bubbles: true }));
+                        // Define a custom getter/setter
+                        Object.defineProperty(element, 'value', {
+                            configurable: true,
+                            get: function() { return finalValue; },
+                            set: function(value) {
+                                descriptor.set.call(this, value);
+                                const e = new Event('input', { bubbles: true });
+                                this.dispatchEvent(e);
+                            }
+                        });
 
-                const infoText = `Ban Evasion: This content is from an account suspected of ban evasion\nPermalink: ${info}`;
-                infoTextarea.value = infoText;
-                infoTextarea.dispatchEvent(new Event('input', { bubbles: true }));
-            }
-        }, 500);
+                        // Simulate typing
+                        element.value = finalValue;
+                        element.setAttribute('data-empty', 'false');
+                        element.dispatchEvent(new Event('input', { bubbles: true }));
+                        element.dispatchEvent(new Event('change', { bubbles: true }));
+                    };
+
+                    // Fill the fields using the controlled input simulation
+                    simulateControlledInput(subredditInput, subreddit);
+                    simulateControlledInput(usernameInput, `u/${username}`);
+
+                    // Keep the working textarea implementation
+                    const infoText = `Ban Evasion: This content is from an account suspected of ban evasion\nPermalink: ${info}`;
+                    infoTextarea.value = infoText;
+                    infoTextarea.setAttribute('data-empty', 'false');
+                    infoTextarea.dispatchEvent(new InputEvent('input', {
+                        bubbles: true,
+                        cancelable: true,
+                        inputType: 'insertText',
+                        data: infoText,
+                        isComposing: false
+                    }));
+
+                    const charCount = document.querySelector('._2nMs12tSLppI6tzUQbdtpO');
+                    if (charCount) {
+                        charCount.textContent = `${infoText.length}/500`;
+                    }
+                }
+            }, 500);
+        }, 1000);
     }
 
     // Fill ban form fields
