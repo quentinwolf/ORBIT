@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         ORBIT
 // @namespace    http://tampermonkey.net/
-// @version      1.051
+// @version      1.052
 // @description  Old Reddit Ban Insertion Tool -- Autofill ban fields on the Old Reddit ban page based on made-up URL parameters.
 // @author       portable-hole
 // @match        https://*.reddit.com/r/*/about/banned/*
@@ -333,7 +333,10 @@
             console.log("Username parameter not passed.");
             return; // Parameter not passed
         }
-
+        
+        // Fill fields
+        document.querySelector('.friend-name').value = username;
+        
         let reasonCode = parseInt(getParameterByName('reason'), 10);
 
         let realAgeString = getParameterByName('realage');
@@ -350,6 +353,9 @@
         console.log("Real Age:", realAge);
         console.log("Age Fake:", fakeAge);
 
+        // Fill fields
+        document.querySelector('#note').value = realAge + " as " + fakeAge + " to evade bot";
+        
         let subredditMatch = window.location.href.match(/https:\/\/(?:www|old)\.reddit\.com\/r\/(.*?)\//);
         let subreddit = (subredditMatch && subredditMatch[1]) ? subredditMatch[1].toLowerCase() : null;
 
@@ -379,8 +385,6 @@
         }
 
         // Fill fields
-        document.querySelector('.friend-name').value = username;
-        document.querySelector('#note').value = realAge + " as " + fakeAge + " to evade bot";
         document.querySelector('#duration').value = banDuration;
         document.querySelector('#ban_message').value = banMessage;
 
