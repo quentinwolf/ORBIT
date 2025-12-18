@@ -34,7 +34,7 @@
         "dilf": {
             "requiredAge": 35,
             "reasons": {
-                1: "You have been banned for violating **Rule 1**. No pictures/videos of guys under the age of 35. You are "
+                1: "You have been banned for violating **Rule 2**. No pictures/videos of guys under the age of 35. You are "
                 // Add other reasons as needed
             }
         },
