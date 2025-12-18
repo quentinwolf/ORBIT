@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         ORBIT
 // @namespace    http://tampermonkey.net/
-// @version      1.053
+// @version      1.054
 // @description  Old Reddit Ban Insertion Tool -- Autofill ban fields on the Old Reddit ban page based on made-up URL parameters.
 // @author       portable-hole
 // @match        https://*.reddit.com/r/*/about/banned/*
@@ -351,7 +351,7 @@
         console.log("Real Age:", realAge);
         console.log("Age Fake:", fakeAge);
 
-        // Fill fields
+        // Build note
         let noteValue = '';
         if (hasRealAge && hasFakeAge) {
             noteValue = realAge + " as " + fakeAge + " to evade bot";
@@ -360,7 +360,6 @@
         } else if (hasFakeAge) {
             noteValue = "Posting as " + fakeAge + " to evade bot";
         }
-        document.querySelector('#note').value = noteValue;
         
         let subredditMatch = window.location.href.match(/https:\/\/(?:www|old)\.reddit\.com\/r\/(.*?)\//);
         let subreddit = (subredditMatch && subredditMatch[1]) ? subredditMatch[1].toLowerCase() : null;
@@ -372,7 +371,17 @@
         if (config) {
             let messageTemplate = config.reasons[reasonCode] || defaultBanMessage;
             if (reasonCode === 1) { // If reason is age related
-                if (hasRealAge) {
+                const ageMeetsRequirement = (hasRealAge && realAge >= config.requiredAge) || (hasFakeAge && fakeAge >= config.requiredAge);
+
+                if (!ageMeetsRequirement) {
+                    if (noteValue) {
+                        noteValue += ` (below required ${config.requiredAge})`;
+                    } else {
+                        noteValue = `Below required age ${config.requiredAge}`;
+                    }
+                    banMessage = defaultBanMessage;
+                    banDuration = '';
+                } else if (hasRealAge) {
                     banMessage = messageTemplate + realAge + ".";
                     let ageDifference = config.requiredAge - realAge;
                     if (ageDifference === 3) {
@@ -399,6 +408,7 @@
         }
 
         // Fill fields
+        document.querySelector('#note').value = noteValue;
         document.querySelector('#duration').value = banDuration;
         document.querySelector('#ban_message').value = banMessage;
 
