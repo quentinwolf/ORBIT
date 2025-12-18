@@ -73,8 +73,9 @@
     }
 
     function parseAge(ageString) {
+        if (!ageString) return null;
         // Use regex to extract numeric value
-        let match = ageString.match(/(\d+)/);
+        let match = String(ageString).match(/(\d+)/);
         return match ? parseInt(match[1], 10) : null; // Return null if no number found
     }
 
@@ -341,20 +342,24 @@
 
         let realAgeString = getParameterByName('realage');
         let fakeAgeString = getParameterByName('fakeage');
-        //let realAge = parseInt(realAgeString, 10);
         let realAge = parseAge(realAgeString); //Run the real age through regex to extract the actual age
-        let fakeAge = parseInt(fakeAgeString, 10);
+        let fakeAge = parseAge(fakeAgeString); // Also parse fake age to support mixed inputs
 
-        if (isNaN(realAge) || isNaN(fakeAge)) {
-            console.log("Invalid or missing age parameters.");
-            return; // Invalid or missing age parameters
-        }
+        const hasRealAge = Number.isInteger(realAge);
+        const hasFakeAge = Number.isInteger(fakeAge);
 
         console.log("Real Age:", realAge);
         console.log("Age Fake:", fakeAge);
 
-        // Fill fields
-        document.querySelector('#note').value = realAge + " as " + fakeAge + " to evade bot";
+        // Build note
+        let noteValue = '';
+        if (hasRealAge && hasFakeAge) {
+            noteValue = realAge + " as " + fakeAge + " to evade bot";
+        } else if (hasRealAge) {
+            noteValue = "Age " + realAge;
+        } else if (hasFakeAge) {
+            noteValue = "Posting as " + fakeAge + " to evade bot";
+        }
         
         let subredditMatch = window.location.href.match(/https:\/\/(?:www|old)\.reddit\.com\/r\/(.*?)\//);
         let subreddit = (subredditMatch && subredditMatch[1]) ? subredditMatch[1].toLowerCase() : null;
@@ -364,16 +369,34 @@
         let banMessage, banDuration;
 
         if (config) {
-            let messageTemplate = config.reasons[reasonCode];
+            let messageTemplate = config.reasons[reasonCode] || defaultBanMessage;
             if (reasonCode === 1) { // If reason is age related
-                banMessage = messageTemplate + realAge + ".";
-                let ageDifference = config.requiredAge - realAge;
-                if (ageDifference === 3) {
-                    banDuration = 999;
-                } else if (ageDifference >= 1 && ageDifference <= 2) {
-                    banDuration = Math.max(330 * ageDifference, 1);
+                const ageMeetsRequirement = (hasRealAge && realAge >= config.requiredAge) || (hasFakeAge && fakeAge >= config.requiredAge);
+
+                if (!ageMeetsRequirement) {
+                    if (noteValue) {
+                        noteValue += ` (below required ${config.requiredAge})`;
+                    } else {
+                        noteValue = `Below required age ${config.requiredAge}`;
+                    }
+                    banMessage = defaultBanMessage;
+                    banDuration = '';
+                } else if (hasRealAge) {
+                    banMessage = messageTemplate + realAge + ".";
+                    let ageDifference = config.requiredAge - realAge;
+                    if (ageDifference === 3) {
+                        banDuration = 999;
+                    } else if (ageDifference >= 1 && ageDifference <= 2) {
+                        banDuration = Math.max(330 * ageDifference, 1);
+                    } else {
+                        banDuration = ''; // Permanent ban
+                    }
+                } else if (hasFakeAge) {
+                    banMessage = messageTemplate + "posting as " + fakeAge + ".";
+                    banDuration = '';
                 } else {
-                    banDuration = ''; // Permanent ban
+                    banMessage = messageTemplate + "an unknown age.";
+                    banDuration = '';
                 }
             } else {
                 banMessage = messageTemplate;  // For other reasons, use the message as it is
@@ -385,6 +408,7 @@
         }
 
         // Fill fields
+        document.querySelector('#note').value = noteValue;
         document.querySelector('#duration').value = banDuration;
         document.querySelector('#ban_message').value = banMessage;
 
