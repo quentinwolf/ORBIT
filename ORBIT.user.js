@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         ORBIT
 // @namespace    http://tampermonkey.net/
-// @version      1.056
+// @version      1.057
 // @description  Old Reddit Ban Insertion Tool -- Autofill ban fields on the Old Reddit ban page based on made-up URL parameters.
 // @author       portable-hole
 // @match        https://*.reddit.com/r/*/about/banned/*
@@ -28,6 +28,13 @@
             "requiredAge": 30,
             "reasons": {
                 1: "You have been banned for violating **Rule 2**. All content must depict men **aged 30+ only**. Do not post content outside this scope. You are "
+                // Add other reasons as needed
+            }
+        },
+        "dilf": {
+            "requiredAge": 35,
+            "reasons": {
+                1: "You have been banned for violating **Rule 1**. No pictures/videos of guys under the age of 35. You are "
                 // Add other reasons as needed
             }
         },
