@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         ORBIT
 // @namespace    http://tampermonkey.net/
-// @version      1.055
+// @version      1.056
 // @description  Old Reddit Ban Insertion Tool -- Autofill ban fields on the Old Reddit ban page based on made-up URL parameters.
 // @author       portable-hole
 // @match        https://*.reddit.com/r/*/about/banned/*
@@ -18,6 +18,8 @@
 
 (function() {
     'use strict';
+
+    const debugMode = true; // Set to 'true' for console logs
 
     // Define your key-pair dictionary here
     // BE SURE to list subreddit in all lowercase, as the script does a comparison to lowercase.
@@ -61,6 +63,13 @@
 
     const defaultBanMessage = "You have been banned for violating the subreddit rules.";
 
+    // Debug Function to log messages to console if enabled at top of script
+    function logDebug(...args) {
+        if (debugMode) {
+            console.log('[ORBIT]', ...args);
+        }
+    }
+
     // Parse URL parameters
     function getParameterByName(name, url) {
         if (!url) url = window.location.href;
@@ -84,26 +93,26 @@
         const thingsContainer = document.querySelector('#siteTable'); // Parent container of modqueue items
 
         if (!thingsContainer) {
-            console.log('No modqueue items found.');
+            logDebug('No modqueue items found.');
             return;
         }
 
-        console.log('Ban Evasion report link observer initialized.');
+        logDebug('Ban Evasion report link observer initialized.');
 
         // Function to process individual items and inject the Ban Evasion report link
         function processThing(thing) {
-            console.log('Processing thing:', thing);
+            logDebug('Processing thing:', thing);
 
             const reportButton = thing.querySelector('.report-button');
             const actionTable = thing.querySelector('.tb-action-table');
 
             if (!reportButton) {
-                console.log('No report button found for this item.');
+                logDebug('No report button found for this item.');
                 return;
             }
 
             if (!actionTable) {
-                console.log('No action table found for this item. Retrying in 500ms...');
+                logDebug('No action table found for this item. Retrying in 500ms...');
                 // Retry in 500ms
                 setTimeout(() => processThing(thing), 500);
                 return;
@@ -115,7 +124,7 @@
                                                                                            );
 
             if (hasBanEvasionAction) {
-                console.log('Ban Evasion detected for:', thing);
+                logDebug('Ban Evasion detected for:', thing);
 
                 if (!thing.querySelector('.report-ban-evasion')) {
                     const username = thing.getAttribute('data-author');
@@ -133,34 +142,34 @@
                     reportLink.style.fontWeight = 'bold';
 
                     reportButton.parentNode.insertBefore(reportLink, reportButton.nextSibling);
-                    console.log('Ban Evasion report link added.');
+                    logDebug('Ban Evasion report link added.');
                 } else {
-                    console.log('Ban Evasion link already exists for this item.');
+                    logDebug('Ban Evasion link already exists for this item.');
                 }
             } else {
-                console.log('No Ban Evasion detected for:', thing);
+                logDebug('No Ban Evasion detected for:', thing);
             }
         }
 
         // Process existing items
         const existingThings = document.querySelectorAll('.thing');
-        console.log('Found existing things:', existingThings.length);
+        logDebug('Found existing things:', existingThings.length);
         existingThings.forEach(processThing);
 
         // Set up a MutationObserver to watch for changes in the modqueue
         const observer = new MutationObserver(mutations => {
-            console.log('Mutation observed:', mutations.length);
+            logDebug('Mutation observed:', mutations.length);
             mutations.forEach(mutation => {
                 if (mutation.addedNodes && mutation.addedNodes.length > 0) {
-                    console.log('Added nodes detected:', mutation.addedNodes.length);
+                    logDebug('Added nodes detected:', mutation.addedNodes.length);
                     mutation.addedNodes.forEach(node => {
                         if (node.classList && node.classList.contains('thing')) {
-                            console.log('Processing new thing:', node);
+                            logDebug('Processing new thing:', node);
                             processThing(node); // Process newly added items
                         } else if (node.querySelectorAll) {
                             // Check for updates to existing items (e.g., loading of tb-action-table)
                             const updatedThings = node.querySelectorAll('.thing');
-                            console.log('Processing updated things:', updatedThings.length);
+                            logDebug('Processing updated things:', updatedThings.length);
                             updatedThings.forEach(processThing);
                         }
                     });
@@ -178,7 +187,7 @@
 
     // Old Reddit function to fill ban evasion report form
     function fillBanEvasionReportOld() {
-        console.log("BANEVADER script started.");
+        logDebug("BANEVADER script started.");
 
         const subreddit = getParameterByName('subreddit');
         const username = getParameterByName('username');
@@ -206,7 +215,7 @@
         }
 
         function setNativeValue(element, value) {
-            console.log(`Setting native value for element:`, element);
+            logDebug(`Setting native value for element:`, element);
             const lastValue = element.value;
             element.value = value;
 
@@ -220,7 +229,7 @@
         function verifyFieldValue(element, expectedValue, fieldName) {
             setTimeout(() => {
                 const actualValue = element.value;
-                console.log(`${fieldName} - Expected: "${expectedValue}" vs Actual: "${actualValue}"`);
+                logDebug(`${fieldName} - Expected: "${expectedValue}" vs Actual: "${actualValue}"`);
             }, 500);
         }
 
@@ -325,19 +334,19 @@
 
     // Fill ban form fields
     function fillBanFields() {
-        console.log("Running the script...");
+        logDebug("Running the script...");
 
         let username = getParameterByName('user');
-        console.log("Username:", username);
+        logDebug("Username:", username);
 
         if (!username) {
-            console.log("Username parameter not passed.");
+            logDebug("Username parameter not passed.");
             return; // Parameter not passed
         }
-        
+
         // Fill fields
         document.querySelector('.friend-name').value = username;
-        
+
         let reasonCode = parseInt(getParameterByName('reason'), 10);
 
         let realAgeString = getParameterByName('realage');
@@ -348,8 +357,8 @@
         const hasRealAge = Number.isInteger(realAge);
         const hasFakeAge = Number.isInteger(fakeAge);
 
-        console.log("Real Age:", realAge);
-        console.log("Age Fake:", fakeAge);
+        logDebug("Real Age:", realAge);
+        logDebug("Age Fake:", fakeAge);
 
         // Build note
         let noteValue = '';
@@ -360,7 +369,7 @@
         } else if (hasFakeAge) {
             noteValue = "Posting as " + fakeAge + " to evade bot";
         }
-        
+
         let subredditMatch = window.location.href.match(/https:\/\/(?:www|old)\.reddit\.com\/r\/(.*?)\//);
         let subreddit = (subredditMatch && subredditMatch[1]) ? subredditMatch[1].toLowerCase() : null;
 
@@ -409,30 +418,30 @@
         document.querySelector('#duration').value = banDuration;
         document.querySelector('#ban_message').value = banMessage;
 
-        console.log("Filled all required fields.");
+        logDebug("Filled all required fields.");
 
         // Clear junk field if all required fields are filled
         if (document.querySelector('.friend-name') && document.querySelector('#note') && document.querySelector('#duration') && document.querySelector('#ban_message')) {
             document.querySelector('#user').value = '';
-            console.log("Cleared the unused field.");
+            logDebug("Cleared the unused field.");
         }
     }
 
     function fillContributorFields() {
-        console.log("Running the script for contributors...");
+        logDebug("Running the script for contributors...");
 
         let username = getParameterByName('user');
-        console.log("Username:", username);
+        logDebug("Username:", username);
 
         if (!username) {
-            console.log("Username parameter not passed.");
+            logDebug("Username parameter not passed.");
             return; // Parameter not passed
         }
 
         // Fill the username field
         document.querySelector('#name').value = username;
 
-        console.log("Filled the username field.");
+        logDebug("Filled the username field.");
     }
 
     // Run the appropriate script based on the current page
