@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         ORBIT
 // @namespace    http://tampermonkey.net/
-// @version      1.054
+// @version      1.055
 // @description  Old Reddit Ban Insertion Tool -- Autofill ban fields on the Old Reddit ban page based on made-up URL parameters.
 // @author       portable-hole
 // @match        https://*.reddit.com/r/*/about/banned/*
@@ -371,18 +371,17 @@
         if (config) {
             let messageTemplate = config.reasons[reasonCode] || defaultBanMessage;
             if (reasonCode === 1) { // If reason is age related
-                const ageMeetsRequirement = (hasRealAge && realAge >= config.requiredAge) || (hasFakeAge && fakeAge >= config.requiredAge);
+                const realAgeBelowRequirement = hasRealAge && realAge < config.requiredAge;
 
-                if (!ageMeetsRequirement) {
+                if (realAgeBelowRequirement) {
                     if (noteValue) {
                         noteValue += ` (below required ${config.requiredAge})`;
                     } else {
                         noteValue = `Below required age ${config.requiredAge}`;
                     }
-                    banMessage = defaultBanMessage;
-                    banDuration = '';
-                } else if (hasRealAge) {
+
                     banMessage = messageTemplate + realAge + ".";
+
                     let ageDifference = config.requiredAge - realAge;
                     if (ageDifference === 3) {
                         banDuration = 999;
@@ -391,11 +390,9 @@
                     } else {
                         banDuration = ''; // Permanent ban
                     }
-                } else if (hasFakeAge) {
-                    banMessage = messageTemplate + "posting as " + fakeAge + ".";
-                    banDuration = '';
                 } else {
-                    banMessage = messageTemplate + "an unknown age.";
+                    // If real age meets the requirement or isn't provided, fall back to default handling
+                    banMessage = defaultBanMessage;
                     banDuration = '';
                 }
             } else {
