@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         ORBIT
 // @namespace    http://tampermonkey.net/
-// @version      1.057
+// @version      1.058
 // @description  Old Reddit Ban Insertion Tool -- Autofill ban fields on the Old Reddit ban page based on made-up URL parameters.
 // @author       portable-hole
 // @match        https://*.reddit.com/r/*/about/banned/*
@@ -107,7 +107,7 @@
         logDebug('Ban Evasion report link observer initialized.');
 
         // Function to process individual items and inject the Ban Evasion report link
-        function processThing(thing) {
+        function processThing(thing, retryCount = 0) {
             logDebug('Processing thing:', thing);
 
             const reportButton = thing.querySelector('.report-button');
@@ -119,9 +119,13 @@
             }
 
             if (!actionTable) {
-                logDebug('No action table found for this item. Retrying in 500ms...');
-                // Retry in 500ms
-                setTimeout(() => processThing(thing), 500);
+                if (retryCount < 3) {
+                    logDebug(`No action table found for this item. Retrying in 500ms... (Attempt ${retryCount + 1}/3)`);
+                    // Retry in 500ms, max 3 attempts
+                    setTimeout(() => processThing(thing, retryCount + 1), 500);
+                } else {
+                    logDebug('No action table found after 3 attempts. Skipping this item.');
+                }
                 return;
             }
 
